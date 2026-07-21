@@ -290,6 +290,16 @@ const std::vector<SettingInfo>& getBaseSettingsList() {
                            "readingIdleTimeThresholdUnits", StrId::STR_CAT_SYSTEM));
     add(SettingInfo::Toggle(StrId::STR_TRACK_READING_STATS, &CrossPointSettings::trackReadingStats, "trackReadingStats",
                             StrId::STR_CAT_SYSTEM));
+    add(SettingInfo::String(StrId::STR_TRMNL_SERVER_URL, SETTINGS.trmnlServerUrl, sizeof(SETTINGS.trmnlServerUrl),
+                            "trmnlServerUrl", StrId::STR_TRMNL_SETTINGS));
+    add(SettingInfo::String(StrId::STR_TRMNL_API_KEY, SETTINGS.trmnlApiKey, sizeof(SETTINGS.trmnlApiKey),
+                            "trmnlApiKey", StrId::STR_TRMNL_SETTINGS)
+            .withObfuscated());
+    add(SettingInfo::String(StrId::STR_TRMNL_DEVICE_ID, SETTINGS.trmnlDeviceId, sizeof(SETTINGS.trmnlDeviceId),
+                            "trmnlDeviceId", StrId::STR_TRMNL_SETTINGS));
+    add(SettingInfo::Enum(StrId::STR_TRMNL_ORIENTATION, &CrossPointSettings::trmnlOrientation,
+                          {StrId::STR_TRMNL_HORIZONTAL, StrId::STR_TRMNL_VERTICAL}, "trmnlOrientation",
+                          StrId::STR_TRMNL_SETTINGS));
 
     // Frontlight quick-panel state: persisted + web-exposed, category-less so
     // it stays off the Settings screen (edited from the swipe-down panel).

@@ -344,7 +344,7 @@ inline SettingInfo buildSleepScreenSetting() {
       StrId::STR_SLEEP_SCREEN, &CrossPointSettings::sleepScreen,
       {StrId::STR_NONE_OPT, StrId::STR_DARK, StrId::STR_LIGHT, StrId::STR_CUSTOM, StrId::STR_COVER,
        StrId::STR_COVER_CUSTOM, StrId::STR_PAGE_OVERLAY, StrId::STR_READING_STATS, StrId::STR_THEME_MINIMAL,
-       StrId::STR_THEME_MINIMAL_STATS, StrId::STR_THEME_DASHBOARD, StrId::STR_QUICK_RESUME},
+       StrId::STR_THEME_MINIMAL_STATS, StrId::STR_THEME_DASHBOARD, StrId::STR_TRMNL, StrId::STR_QUICK_RESUME},
       "sleepScreen", StrId::STR_CAT_DISPLAY);
   s.withEnumRawValues({
       static_cast<uint8_t>(CrossPointSettings::BLANK),
@@ -358,6 +358,7 @@ inline SettingInfo buildSleepScreenSetting() {
       static_cast<uint8_t>(CrossPointSettings::MINIMAL_SLEEP),
       static_cast<uint8_t>(CrossPointSettings::MINIMAL_STATS_SLEEP),
       static_cast<uint8_t>(CrossPointSettings::DASHBOARD_SLEEP),
+      static_cast<uint8_t>(CrossPointSettings::TRMNL),
       static_cast<uint8_t>(CrossPointSettings::QUICK_RESUME),
   });
   return s;
@@ -619,17 +620,18 @@ inline SettingInfo buildSideButtonActionSetting(const StrId nameId, uint8_t Cros
 // #1636) so the per-entry SettingInfo cost is paid once. Read-only consumers
 // can use it directly; mutable device UI lists use getSettingsList(), which
 // returns an owned copy and can add SD-card font and dictionary options.
-// 110 common entries, plus Publisher Fonts on scalable-font builds and four
+// 114 common entries, plus Publisher Fonts on scalable-font builds and four
 // edge gestures on touch devices; getBaseSettingsCapacity() adds the three runtime IMU entries.
 #if CROSSINK_SCALABLE_FONTS
-inline constexpr size_t BASE_SETTINGS_CAPACITY = 111 + (CROSSINK_APP_CAP_TOUCH ? 4 : 0);
+inline constexpr size_t BASE_SETTINGS_CAPACITY = 115 + (CROSSINK_APP_CAP_TOUCH ? 4 : 0);
 #else
-inline constexpr size_t BASE_SETTINGS_CAPACITY = 110 + (CROSSINK_APP_CAP_TOUCH ? 4 : 0);
+inline constexpr size_t BASE_SETTINGS_CAPACITY = 114 + (CROSSINK_APP_CAP_TOUCH ? 4 : 0);
 #endif
 
 inline size_t getBaseSettingsCapacity() {
   return BASE_SETTINGS_CAPACITY + (QuickActions::supportsTiltPageTurn() ? 3 : 0);
 }
+
 
 const std::vector<SettingInfo>& getBaseSettingsList();
 
@@ -1096,11 +1098,12 @@ inline std::vector<SettingInfo> buildDisplaySleepSettingsList(const std::vector<
 
 inline std::vector<SettingInfo> buildSystemSettingsParentList(const std::vector<SettingInfo>& allSettings) {
   std::vector<SettingInfo> systemSettings;
-  systemSettings.reserve(10);
+  systemSettings.reserve(11);
   systemSettings.push_back(SettingInfo::Submenu(StrId::STR_SYSTEM_DEVICE, SettingAction::SystemDevice));
   systemSettings.push_back(SettingInfo::Submenu(StrId::STR_SYSTEM_FILES_CACHE, SettingAction::SystemFilesCache));
   systemSettings.push_back(SettingInfo::Submenu(StrId::STR_READING_STATS, SettingAction::SystemReadingStats));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
+  systemSettings.push_back(SettingInfo::Action(StrId::STR_TRMNL_SETTINGS, SettingAction::TrmnlSettings));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_SYNC_SERVER, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_PLUGINS, SettingAction::Plugins));

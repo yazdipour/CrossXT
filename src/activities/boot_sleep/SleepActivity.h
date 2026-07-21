@@ -29,6 +29,9 @@ class SleepActivity final : public Activity {
   void renderMinimalStatsSleepScreen() const;
   void renderDashboardSleepScreen() const;
   bool renderBitmapSleepScreen(Bitmap& bitmap) const;
+  bool renderPngSleepScreen(const std::string& path) const;
+  bool renderTrmnlCachedImage() const;
+  void renderTrmnlSleepScreen() const;
   void renderLastScreenSleepScreen() const;
   void renderBlankSleepScreen() const;
   void renderOverlaySleepScreen() const;

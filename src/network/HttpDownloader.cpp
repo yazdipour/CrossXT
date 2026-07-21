@@ -559,8 +559,6 @@ HttpDownloader::DownloadError runGetDefault(const std::string& url, const std::s
 #ifdef ESP_ERR_HTTP_EAGAIN
       lastReadMs = millis();
 #endif
-      if (sink.total > 0 && sink.total <= PROGRESS_UPDATE_BYTES) {
-      }
       progressNotifier.notify(sink.downloaded, false);
       if (sink.total > 0 && sink.downloaded >= sink.total) break;
       delay(0);
@@ -604,22 +602,23 @@ HttpDownloader::DownloadError runGet(const std::string& url, const std::string& 
 }  // namespace
 
 bool HttpDownloader::fetchUrl(const std::string& url, Stream& outContent, const std::string& username,
-                              const std::string& password) {
-  return fetchUrl(
-      url, [&outContent](const uint8_t* data, size_t len) { return outContent.write(data, len) == len; }, username,
-      password);
+                              const std::string& password, DownloadOptions options) {
+  return streamUrl(url, [&outContent](const uint8_t* data, size_t len) { return outContent.write(data, len) == len; },
+                   nullptr, username, password, options) == OK;
 }
 
 bool HttpDownloader::fetchUrl(const std::string& url, std::string& outContent, const std::string& username,
-                              const std::string& password) {
+                              const std::string& password, DownloadOptions options) {
   outContent.clear();
-  return fetchUrl(
+  const DownloadError result = streamUrl(
       url,
       [&outContent](const uint8_t* data, size_t len) {
         outContent.append(reinterpret_cast<const char*>(data), len);
         return true;
       },
-      username, password);
+      nullptr, username, password, options);
+  if (result != OK) outContent.clear();
+  return result == OK;
 }
 
 bool HttpDownloader::fetchUrl(const std::string& url, const DataCallback& onData, const std::string& username,
@@ -830,7 +829,7 @@ HttpDownloader::DownloadError HttpDownloader::downloadToFile(const std::string& 
     }
   } while (true);
   if (insufficientSpace) result = INSUFFICIENT_SPACE;
-
+  if (sink.invalidResponse && options.maxBytes && sink.downloaded >= options.maxBytes) result = SIZE_LIMIT_EXCEEDED;
   if (result != OK) {
     LOG_ERR("HTTP", "Transfer failed: error=%d downloaded=%zu expected=%zu preservePartial=%d resumePartial=%d",
             static_cast<int>(result), sink.downloaded, sink.total, options.preservePartial, options.resumePartial);

@@ -33,6 +33,7 @@ class HttpDownloader {
     INSUFFICIENT_SPACE,
     UNAUTHORIZED,
     FILE_EXISTS,  // Resolved destination needs explicit replacement approval.
+    SIZE_LIMIT_EXCEEDED,
   };
 
   enum class Transport {
@@ -108,10 +109,10 @@ class HttpDownloader {
    * Fetch text content from a URL with optional credentials.
    */
   static bool fetchUrl(const std::string& url, std::string& outContent, const std::string& username = "",
-                       const std::string& password = "");
+                       const std::string& password = "", DownloadOptions options = DownloadOptions());
 
   static bool fetchUrl(const std::string& url, Stream& stream, const std::string& username = "",
-                       const std::string& password = "");
+                       const std::string& password = "", DownloadOptions options = DownloadOptions());
 
   /**
    * Stream the response body to onData as it arrives, without buffering it.

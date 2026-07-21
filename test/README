@@ -10,6 +10,16 @@ More information about PlatformIO Unit Testing:
 
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
 
+TRMNL display parser and display config:
+
+```sh
+test/run_trmnl_display_json_parser_test.sh
+```
+
+This validates the tiny TRMNL `/api/display` response parser and the portable
+TRMNL display orientation sizing used by the sleep screen fetch path. It runs
+on the host with `c++` and does not require PlatformIO or device hardware.
+
 Simulator smoke test:
 
 - Run `./scripts/run_simulator_smoke_test.py` from the repo root.
