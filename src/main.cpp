@@ -1635,6 +1635,9 @@ void setup() {
         }
         break;
       }
+      case NetworkBootTarget::KARAKEEP:
+        launched = activityManager.goToKarakeep(true);
+        break;
     }
     if (!launched) {
       LOG_ERR("MAIN", "Minimal network boot target failed; returning home");

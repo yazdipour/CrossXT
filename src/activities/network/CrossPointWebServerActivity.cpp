@@ -78,6 +78,7 @@ void CrossPointWebServerActivity::onEnter() {
   // C3 has substantially more contiguous heap here than while serving HTTP.
   sdFontSystem.ensureRegistry();
   sdFontSystem.releaseForNetwork(renderer);
+  LOG_INF("WEBACT", "Network memory prepared: free=%u maxAlloc=%u", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
 
   LOG_DBG("WEBACT", "Free heap at onEnter: %d bytes", ESP.getFreeHeap());
 
@@ -382,6 +383,7 @@ void CrossPointWebServerActivity::startWebServer() {
 
   if (webServer->isRunning()) {
     state = WebServerActivityState::SERVER_RUNNING;
+    LOG_INF("WEBACT", "Web server ready: free=%u maxAlloc=%u", ESP.getFreeHeap(), ESP.getMaxAllocHeap());
     lastWifiBars = isApMode ? 0 : barsForRssi(WiFi.RSSI(), 0);
 
     // Force an immediate render since we're transitioning from a subactivity

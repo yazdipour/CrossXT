@@ -53,6 +53,7 @@ class HomeActivity final : public Activity {
   bool hasBookmarks = false;
   bool hasClippings = false;
   bool hasPlugins = false;
+  bool hasKarakeep = false;
   bool minimalMenuOpen = false;
   bool minimalSuppressInitialFrontRelease = false;
   bool homeBookSwapLongPressHandled = false;
@@ -111,6 +112,7 @@ class HomeActivity final : public Activity {
   void onSettingsOpen();
   void onFileTransferOpen();
   void onPluginsOpen();
+  void onKarakeepOpen();
   void onReadingStatsOpen();
   void onSavedItemsOpen();
 

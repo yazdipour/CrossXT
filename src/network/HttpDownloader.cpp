@@ -249,6 +249,7 @@ HttpDownloader::DownloadError runGetWolfSsl(const std::string& url, const std::s
                                             Sink& sink, const size_t bufferSize) {
   (void)bufferSize;  // SecureHttpClient owns one fixed 1024-byte streaming buffer.
   std::string currentUrl = url;
+
   ProgressNotifier progressNotifier(sink.progress);
 
   for (uint16_t hop = 0; hop <= sink.options->maxRedirects; ++hop) {
@@ -355,6 +356,7 @@ HttpDownloader::DownloadError runGetWolfSsl(const std::string& url, const std::s
         LOG_ERR("HTTP", "Rejected HTTPS downgrade redirect to %s", redirect.host.c_str());
         return HttpDownloader::HTTP_ERROR;
       }
+
       currentUrl = redirectUrl;
       LOG_DBG("HTTP", "Redirecting to: %s", redirect.host.c_str());
       continue;
@@ -477,6 +479,7 @@ HttpDownloader::DownloadError runGetDefault(const std::string& url, const std::s
         esp_http_client_cleanup(client);
         return HttpDownloader::HTTP_ERROR;
       }
+
       currentUrl = redirectUrl;
       LOG_DBG("HTTP", "Redirecting to: %s", redirect.host.c_str());
       esp_http_client_cleanup(client);

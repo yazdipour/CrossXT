@@ -31,6 +31,7 @@
 #include "CrossPointState.h"
 #include "FilenameFontSystem.h"
 #include "GlobalActions.h"
+#include "KarakeepConfigStore.h"
 #include "MappedInputManager.h"
 #include "RecentBookProgress.h"
 #include "RecentBooksStore.h"
@@ -58,6 +59,7 @@ enum class HomeMenuAction {
   ContinueReading,
   Library,
   Plugins,
+  Karakeep,
   ReadingStats,
   Bookmarks,
   FileTransfer,
@@ -71,7 +73,7 @@ struct HomeMenuEntry {
 };
 
 struct HomeMenuEntries {
-  static constexpr int kCapacity = 8;
+  static constexpr int kCapacity = 9;
   std::array<HomeMenuEntry, kCapacity> entries{};
   int count = 0;
 
@@ -233,13 +235,16 @@ const char* savedItemsLabel(bool hasBookmarks, bool hasClippings) {
   return tr(STR_BOOKMARKS);
 }
 
-void appendHomeMenuItems(HomeMenuEntries& items, bool hasPlugins, bool hasReadingStats, bool hasBookmarks,
-                         bool hasClippings) {
+void appendHomeMenuItems(HomeMenuEntries& items, bool hasPlugins, bool hasKarakeep, bool hasReadingStats,
+                         bool hasBookmarks, bool hasClippings) {
   items.push({tr(STR_BROWSE_FILES), Folder, HomeMenuAction::BrowseFiles});
   items.push({tr(STR_LIBRARY), Library, HomeMenuAction::Library});
 
   if (hasPlugins) {
     items.push({tr(STR_PLUGINS), UIIcon::Plugins, HomeMenuAction::Plugins});
+  }
+  if (hasKarakeep) {
+    items.push({tr(STR_KARAKEEP), Library, HomeMenuAction::Karakeep});
   }
   if (hasReadingStats) {
     items.push({tr(STR_READING_STATS), Chart, HomeMenuAction::ReadingStats});
@@ -252,13 +257,15 @@ void appendHomeMenuItems(HomeMenuEntries& items, bool hasPlugins, bool hasReadin
   items.push({tr(STR_SETTINGS_TITLE), Settings, HomeMenuAction::Settings});
 }
 
-HomeMenuEntries buildHomeMenuItems(bool hasPlugins, bool hasReadingStats, bool hasBookmarks, bool hasClippings) {
+HomeMenuEntries buildHomeMenuItems(bool hasPlugins, bool hasKarakeep, bool hasReadingStats, bool hasBookmarks,
+                                   bool hasClippings) {
   HomeMenuEntries items;
-  appendHomeMenuItems(items, hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+  appendHomeMenuItems(items, hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
   return items;
 }
 
-HomeMenuEntries buildMinimalMenuItems(bool hasPlugins, bool hasReadingStats, bool hasBookmarks, bool hasClippings) {
+HomeMenuEntries buildMinimalMenuItems(bool hasPlugins, bool hasKarakeep, bool hasReadingStats, bool hasBookmarks,
+                                      bool hasClippings) {
   HomeMenuEntries items;
   if (SETTINGS.isLibraryFileBrowserSwapped()) {
     items.push({tr(STR_BROWSE_FILES), Folder, HomeMenuAction::BrowseFiles});
@@ -268,6 +275,9 @@ HomeMenuEntries buildMinimalMenuItems(bool hasPlugins, bool hasReadingStats, boo
 
   if (hasPlugins) {
     items.push({tr(STR_PLUGINS), UIIcon::Plugins, HomeMenuAction::Plugins});
+  }
+  if (hasKarakeep) {
+    items.push({tr(STR_KARAKEEP), Library, HomeMenuAction::Karakeep});
   }
   if (hasBookmarks || hasClippings) {
     items.push({savedItemsLabel(hasBookmarks, hasClippings), BookmarkIcon, HomeMenuAction::Bookmarks});
@@ -280,13 +290,13 @@ HomeMenuEntries buildMinimalMenuItems(bool hasPlugins, bool hasReadingStats, boo
   return items;
 }
 
-HomeMenuEntries buildSelectableHomeMenuItems(bool hasPlugins, bool hasReadingStats, bool hasBookmarks,
-                                             bool hasClippings, bool includeContinueReading) {
+HomeMenuEntries buildSelectableHomeMenuItems(bool hasPlugins, bool hasKarakeep, bool hasReadingStats,
+                                             bool hasBookmarks, bool hasClippings, bool includeContinueReading) {
   HomeMenuEntries items;
   if (includeContinueReading) {
     items.push({tr(STR_CONTINUE_READING), Book, HomeMenuAction::ContinueReading});
   }
-  appendHomeMenuItems(items, hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+  appendHomeMenuItems(items, hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
   return items;
 }
 
@@ -298,6 +308,8 @@ HomeMenuAction homeActionForInitialMenuItem(HomeMenuItem item) {
       return HomeMenuAction::Library;
     case HomeMenuItem::PLUGINS:
       return HomeMenuAction::Plugins;
+    case HomeMenuItem::KARAKEEP:
+      return HomeMenuAction::Karakeep;
     case HomeMenuItem::FILE_TRANSFER:
       return HomeMenuAction::FileTransfer;
     case HomeMenuItem::SETTINGS_MENU:
@@ -550,6 +562,7 @@ int HomeActivity::getMenuItemCount() const {
     count++;  // Continue Reading menu item
   }
   if (hasPlugins) count++;
+  if (hasKarakeep) count++;
   if (hasReadingStats) {
     count++;
   }
@@ -837,6 +850,7 @@ void HomeActivity::onEnter() {
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
     if (!coverGridUi) LOG_ERR("HOME", "Cannot allocate cover grid UI; using standard Home");
   }
+  hasKarakeep = Storage.exists(KarakeepConfigStore::getFilePath());
   const bool isCarouselTheme =
       static_cast<CrossPointSettings::UI_THEME>(SETTINGS.uiTheme) == CrossPointSettings::UI_THEME::LYRA_CAROUSEL;
 
@@ -907,6 +921,8 @@ void HomeActivity::onEnter() {
       case HomeMenuItem::LIBRARY:
         selectorIndex = base + 1;
         break;
+      case HomeMenuItem::KARAKEEP:
+        break;  // Cover Grid uses its fixed tab layout; leave the book selected.
       case HomeMenuItem::PLUGINS:
         selectorIndex = base + 2;
         break;
@@ -924,7 +940,7 @@ void HomeActivity::onEnter() {
   } else if (initialMenuItem != HomeMenuItem::NONE) {
     const bool includeContinueReading = metrics.homeContinueReadingInMenu && !recentBooks.empty();
     const auto menuItems =
-        buildSelectableHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings, includeContinueReading);
+        buildSelectableHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings, includeContinueReading);
     const int menuIndex = findMenuActionIndex(menuItems, homeActionForInitialMenuItem(initialMenuItem));
     if (menuIndex >= 0) {
       selectorIndex = getHomeMenuSelectionOffset(recentBooks) + menuIndex;
@@ -933,7 +949,7 @@ void HomeActivity::onEnter() {
 
   if (usesMinimalHomeInteraction() && initialMenuItem == HomeMenuItem::PLUGINS && hasPlugins) {
     minimalMenuOpen = true;
-    const auto menuItems = buildMinimalMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+    const auto menuItems = buildMinimalMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
     minimalMenuIndex = findMenuActionIndex(menuItems, HomeMenuAction::Plugins);
   }
 
@@ -1478,7 +1494,7 @@ void HomeActivity::loop() {
     }
 
     if (minimalMenuOpen) {
-      const auto menuItems = buildMinimalMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+      const auto menuItems = buildMinimalMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
       const int menuCount = static_cast<int>(menuItems.size());
       if (menuCount <= 0) {
         minimalMenuOpen = false;
@@ -1501,6 +1517,9 @@ void HomeActivity::loop() {
             break;
           case HomeMenuAction::Plugins:
             onPluginsOpen();
+            break;
+          case HomeMenuAction::Karakeep:
+            onKarakeepOpen();
             break;
           case HomeMenuAction::ReadingStats:
             onReadingStatsOpen();
@@ -1697,7 +1716,7 @@ void HomeActivity::loop() {
   const int previousHighlightedBookIdx = getHighlightedBookIndex();
   const int visibleBookCount = getVisibleRecentBookCount();
   const int carouselMenuItemCount =
-      isCarousel ? static_cast<int>(buildHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings).size())
+      isCarousel ? static_cast<int>(buildHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings).size())
                  : 0;
 
   MappedInputManager::SwipeDir carouselSwipe = MappedInputManager::SwipeDir::None;
@@ -1746,6 +1765,9 @@ void HomeActivity::loop() {
       case HomeMenuAction::Plugins:
         onPluginsOpen();
         break;
+      case HomeMenuAction::Karakeep:
+        onKarakeepOpen();
+        break;
       case HomeMenuAction::ReadingStats:
         onReadingStatsOpen();
         break;
@@ -1768,7 +1790,7 @@ void HomeActivity::loop() {
       return;
     }
 
-    auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings,
+    auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings,
                                                   metrics.homeContinueReadingInMenu && !recentBooks.empty());
     const int menuSelectedIndex = selectorIndex - getHomeMenuSelectionOffset(recentBooks);
     if (menuSelectedIndex < 0 || menuSelectedIndex >= static_cast<int>(menuItems.size())) {
@@ -1815,7 +1837,7 @@ void HomeActivity::loop() {
       if (activate && mappedInput.wasItemTapped(touchedMenuIndex)) {
         if (touchedMenuIndex < 0 || touchedMenuIndex >= menuItemCount) return false;
         carouselMenuTouchDownIndex = -1;
-        const auto menuItems = buildHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+        const auto menuItems = buildHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
         activateHomeMenuAction(menuItems[touchedMenuIndex].action);
         return true;
       }
@@ -1950,7 +1972,7 @@ void HomeActivity::loop() {
     }
   } else {
     const auto& metrics = UITheme::getInstance().getMetrics();
-    const auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings,
+    const auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings,
                                                         metrics.homeContinueReadingInMenu && !recentBooks.empty());
     auto handleTouch = [&](const bool activate) {
       int touchedBookIndex = -1;
@@ -2117,7 +2139,7 @@ void HomeActivity::render(RenderLock&&) {
 
     if (minimalMenuOpen) {
       GUI.drawHeader(renderer, UITheme::getHeaderRect(renderer, metrics.homeTopPadding), nullptr);
-      const auto menuItems = buildMinimalMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+      const auto menuItems = buildMinimalMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
       GUI.drawButtonMenu(
           renderer, Rect{safe.x, homeTop, safe.width, std::max(0, safe.y + safe.height - homeTop)},
           static_cast<int>(menuItems.size()), minimalMenuIndex,
@@ -2198,7 +2220,7 @@ void HomeActivity::render(RenderLock&&) {
       carouselTheme.drawReadingProgress(renderer, coverRect, recentBooks,
                                         hasAnyBookStats(currentBookStats) ? &currentBookStats : nullptr,
                                         currentBookProgressPercent);
-      const auto menuItems = buildHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings);
+      const auto menuItems = buildHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings);
       const int menuHighlightIndex = mappedInput.hasTouchHardware()
                                          ? carouselMenuTouchDownIndex
                                          : (inCarouselRow ? -1 : selectorIndex - static_cast<int>(recentBooks.size()));
@@ -2223,7 +2245,7 @@ void HomeActivity::render(RenderLock&&) {
   renderer.clearScreen();
   bool bufferRestored = coverBufferStored && restoreCoverBuffer();
 
-  auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasReadingStats, hasBookmarks, hasClippings,
+  auto menuItems = buildSelectableHomeMenuItems(hasPlugins, hasKarakeep, hasReadingStats, hasBookmarks, hasClippings,
                                                 metrics.homeContinueReadingInMenu && !recentBooks.empty());
   int homeCoverTileHeight = metrics.homeCoverTileHeight;
   if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::CLASSIC) {
@@ -2351,6 +2373,8 @@ void HomeActivity::onSettingsOpen() { activityManager.goToSettings(); }
 void HomeActivity::onFileTransferOpen() { activityManager.goToFileTransfer(); }
 
 void HomeActivity::onPluginsOpen() { activityManager.goToPlugins(); }
+
+void HomeActivity::onKarakeepOpen() { activityManager.goToKarakeep(); }
 
 void HomeActivity::onReadingStatsOpen() {
   if (!SETTINGS.shouldTrackReadingStats()) return;
