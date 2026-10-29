@@ -7,6 +7,8 @@
 #include <WiFi.h>
 
 #include <cstdio>
+#include <optional>
+#include <vector>
 
 #include "WifiCredentialStore.h"
 #include "network/HttpDownloader.h"

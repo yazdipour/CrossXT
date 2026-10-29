@@ -14,6 +14,7 @@
 #include <cstring>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "CrossPointState.h"
 #include "MappedInputManager.h"
@@ -222,7 +223,7 @@ void KarakeepBrowserActivity::launchWifiSelection() {
   startActivityForResult(std::move(wifi), [this](const ActivityResult& result) {
     if (result.isCancelled) {
       state = State::ERROR;
-      errorMessage = tr(STR_WIFI_CONN_FAILED);
+      errorMessage = tr(STR_CONNECTION_FAILED);
       requestUpdate();
     } else {
       fetchPage();
@@ -239,10 +240,13 @@ void KarakeepBrowserActivity::fetchPage() {
   std::string url = apiBaseUrl() + "/bookmarks?limit=" + std::to_string(PAGE_LIMIT) + "&includeContent=false";
   if (cursor[0]) url += "&cursor=" + percentEncode(cursor.data());
   std::string authorization = "Bearer " + apiToken;
-  const HttpDownloader::Header headers[] = {{"Authorization", authorization.c_str()}, {"Accept", "application/json"}};
+  const std::vector<HttpDownloader::Header> headers = {{"Authorization", authorization},
+                                                       {"Accept", "application/json"}};
+  HttpDownloader::DownloadOptions options;
+  options.headers = &headers;
+  options.maxBytes = LIST_MAX_BYTES;
   ParserStream stream(parser);
-  if (!HttpDownloader::fetchUrl(url, stream, "", "", headers, std::size(headers), LIST_MAX_BYTES) ||
-      parser.hasError()) {
+  if (!HttpDownloader::fetchUrl(url, stream, "", "", options) || parser.hasError()) {
     LOG_ERR("KKB", "Failed to fetch/parse bookmark page");
     state = State::ERROR;
     errorMessage = tr(STR_FETCH_FEED_FAILED);
@@ -343,8 +347,11 @@ bool KarakeepBrowserActivity::cacheBookmark(const KarakeepBookmarkEntry& entry, 
   std::string url = assetBacked ? apiBaseUrl() + "/assets/" + percentEncode(entry.contentAssetId)
                                 : apiBaseUrl() + "/bookmarks/" + percentEncode(entry.id) + "?includeContent=true";
   std::string authorization = "Bearer " + apiToken;
-  const HttpDownloader::Header headers[] = {{"Authorization", authorization.c_str()}};
-  const bool fetched = HttpDownloader::fetchUrl(url, stream, "", "", headers, std::size(headers), CONTENT_MAX_BYTES);
+  const std::vector<HttpDownloader::Header> headers = {{"Authorization", authorization}};
+  HttpDownloader::DownloadOptions options;
+  options.headers = &headers;
+  options.maxBytes = CONTENT_MAX_BYTES;
+  const bool fetched = HttpDownloader::fetchUrl(url, stream, "", "", options);
   const bool converted = fetched && converter.finish();
   file.flush();
   file.close();
